@@ -219,9 +219,11 @@ func (a *AuthenticatorData) unmarshalAttestedData(rawAuthData []byte) error {
 	if len(rawAuthData) < int(55+idLength) {
 		return ErrBadRequest.WithDetails("Authenticator attestation data length too short")
 	}
+
 	if idLength > maxCredentialIDLength {
 		return ErrBadRequest.WithDetails("Authenticator attestation data credential id length too long")
 	}
+
 	a.AttData.CredentialID = rawAuthData[55 : 55+idLength]
 	a.AttData.CredentialPublicKey = unmarshalCredentialPublicKey(rawAuthData[55+idLength:])
 	return nil
@@ -255,13 +257,7 @@ func (a *AuthenticatorData) Verify(rpIdHash, appIDHash []byte, userVerificationR
 	// Verify that the RP ID hash in authData is indeed the SHA-256
 	// hash of the RP ID expected by the RP.
 	if !bytes.Equal(a.RPIDHash[:], rpIdHash) && !bytes.Equal(a.RPIDHash[:], appIDHash) {
-		return ErrVerification.WithInfo(fmt.Sprintf("RP Hash mismatch. Expected %x and Received %x\n", a.RPIDHash, rpIdHash))
-	}
-
-	// Registration Step 10 & Assertion Step 12
-	// Verify that the User Present bit of the flags in authData is set.
-	if !a.Flags.UserPresent() {
-		return ErrVerification.WithInfo(fmt.Sprintln("User presence flag not set by authenticator"))
+		return ErrVerification.WithInfo(fmt.Sprintf("RP Hash mismatch. Expected %+s and Received %+s\n", a.RPIDHash, rpIdHash))
 	}
 
 	// Registration Step 11 & Assertion Step 13
